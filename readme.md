@@ -4,7 +4,6 @@ This is my submit for the challenge. Feel free to ignore any other file structur
 
 ## Installation
 
-```python
 After downloading the repo 
 $ npm i
 Change the inputData.txt file to a location that's easy to find like Download 
