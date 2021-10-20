@@ -1,8 +1,8 @@
 import fs from "fs";
 import Patient from "./patient.model";
-import bcrypt from "bcryptjs";
+import Email from "../email/email.model";
 import { APIsuccess, APIerror } from "../helpers/API-responses";
-import { INSERT } from "fast-diff";
+
 // Process CSV file and create Patient entries
 export const processPatientCsv = async (req, res) => {
 	try {
@@ -17,7 +17,9 @@ export const processPatientCsv = async (req, res) => {
 		let objectBuilder = {}
 		const processedCsvToInsert = []
 		const processedCsvToUpdate = []
+		const patientsThatGaveConsent = []
 
+		// Process CSV data 
 
 		function processStep(i) {
 			const newKey = columns[columnIndex]
@@ -25,6 +27,19 @@ export const processPatientCsv = async (req, res) => {
 			columnIndex ++
 		}
 
+		for (let i = 0; i < cleanupData.length; i++) {
+
+			if(columnIndex === columns.length) {
+				await handleInsertOrUpdate(objectBuilder)
+				objectBuilder = {}
+				columnIndex = 0
+				processStep(i)
+
+			} else {
+				processStep(i)
+			}
+		}
+		// Updates existing entries
 		async function handleInsertOrUpdate(item) {
 			const isPatientInDb = await Patient.findOne({ "Card Number": item["Card Number"] }, function (err, doc){
 				if(!doc) return
@@ -47,7 +62,7 @@ export const processPatientCsv = async (req, res) => {
 				doc.save();
 			  });
 			
-			console.log("isPatientInDb", isPatientInDb)
+			// console.log("isPatientInDb", isPatientInDb)
 			if(!isPatientInDb) {
 				processedCsvToInsert.push(item)
 			} else {
@@ -55,28 +70,43 @@ export const processPatientCsv = async (req, res) => {
 				item["_id"] = isPatientInDb["_id"]
 				processedCsvToUpdate.push(itemToUpdate)
 			}
-		}
-
-		for (let i = 0; i < cleanupData.length; i++) {
-
-			if(columnIndex === columns.length) {
-				await handleInsertOrUpdate(objectBuilder)
-				objectBuilder = {}
-				columnIndex = 0
-				processStep(i)
-
-			} else {
-				processStep(i)
+			if(item["CONSENT"] === "Y" && item["Email Address"]) {
+				patientsThatGaveConsent.push(item)
 			}
 		}
 
+		// Bulk creation of new entries
 		if(processedCsvToInsert.length){
 			const newPatients = await Patient.insertMany(processedCsvToInsert)
-			console.log(newPatients)
-		} 
+			// console.log(newPatients)
+		}
+
+		// Handle email scheduling while adding reference to the user who gave concent
+		if(patientsThatGaveConsent.length) {
+			const emailPayload = []
+			const frequency = ["Day 1", "Day 2", "Day 3", "Day 4"]
+			const dayInMs = 86400000
+			patientsThatGaveConsent.map( patient => {
+				frequency.map ( (day, index) => {
+					const current = new Date()
+					const correspondingDate = new Date(current.getTime() + (dayInMs * (index + 1)))
+					const email = {
+						"name": day,
+						"scheduled_date": correspondingDate,
+						"locator": patient["Email Address"] || patient["Card Number"]
+					}
+					emailPayload.push(email)
+				})
+				
+			})
+			const newEmails = await Email.insertMany(emailPayload)
+			console.log("newEmails", newEmails)
+		}
 
 
-		return res.status(200).json(APIsuccess(200, {   processedCsvToInsert, processedCsvToUpdate }));
+
+
+		return res.status(200).json(APIsuccess(200, {   processedCsvToInsert, processedCsvToUpdate, patientsThatGaveConsent }));
 		// Validate patient data
 		const { valid, errors } = await Patient.validatePatient(body);
 		if (!valid) return res.status(400).json(APIerror(400, { errors }));
@@ -94,8 +124,6 @@ export const processPatientCsv = async (req, res) => {
 		const isPatientInDb = await Patient.findOne({ email });
 		if (isPatientInDb) return res.status(400).json(APIerror(400, { existInDb: true }));
 
-		// Hash password
-		const hashedPassword = await bcrypt.hash(password, 12); //await bcrypt.compare(password, patient.password <-- hashed)
 
 		// Create new patient
 		const patient = new Patient({

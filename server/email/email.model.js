@@ -5,29 +5,18 @@ import isEmpty from 'lodash/isEmpty';
  * Email Schema
  */
 const EmailSchema = new mongoose.Schema({
-  emailname: {
+  "locator": {
+    type: String,
+    required: false
+  },
+  "name": {
     type: String,
     required: true
   },
-  email: {
-    type: String,
-    required: true,
-    match: [
-      /^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/
-    ]
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  mobileNumber: {
-    type: String,
-    required: true
-  },
-  createdAt: {
+  "scheduled_date": {
     type: Date,
-    default: Date.now
-  }
+    required: false
+  },
 });
 
 /**
@@ -46,21 +35,6 @@ EmailSchema.method({});
  * Statics
  */
 EmailSchema.statics = {
-  /**
-   * Get email
-   * @param {ObjectId} id - The objectId of email.
-   * @returns {Promise<Email}
-   */
-  get(id) {
-    return this.findById(id)
-      .exec()
-      .then(email => {
-        if (email) {
-          return email;
-        }
-        return Promise.reject({ error: 'nope' });
-      });
-  },
 
   /**
    * List emails in descending order of 'createdAt' timestamp.
@@ -100,22 +74,6 @@ EmailSchema.statics = {
     //If errors
     return { valid: false, errors };
   },
-
-  /**
-   * @param {string} email
-   * @param {string} password
-   * @returns {Boolean}
-   */
-  validateLoginData({ email, password }) {
-    let errors = {};
-    !email && (errors.email = 'Email is required.');
-    !password && (errors.password = 'Password is required.');
-    //If valid return false
-    if (isEmpty(errors)) return { valid: true, errors: null };
-    //If errors
-    return { valid: false, errors };
-  },
-
   /**
    * @param {ObjectId} id
    * @param {string} emailname
