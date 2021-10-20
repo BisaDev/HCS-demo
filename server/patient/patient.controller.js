@@ -22,7 +22,7 @@ export const processPatientCsv = async (req, res) => {
 
 		function getCleanupData () {
 
-			const textData = fs.readFileSync("/Users/abisaid.fernandez/Downloads/inputData.txt", "utf8");
+			const textData = fs.readFileSync(`${process.env.FILE_LOCATION}inputData.txt`, "utf8");
 			const cleanupData = textData.replace(/(\r\n|\n|\r)/g, "|").split("|")
 			const columns = cleanupData.splice(0 , numColumns)
 		
