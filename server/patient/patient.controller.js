@@ -10,16 +10,24 @@ export const processPatientCsv = async (req, res) => {
 	try {
 		const { body } = req;
 		const numColumns = 16
-
-		const textData = fs.readFileSync("/Users/abisaid.fernandez/Downloads/inputData.txt", "utf8");
-		const cleanupData = textData.replace(/(\r\n|\n|\r)/g, "|").split("|")
-		const columns = cleanupData.splice(0 , numColumns)
+		const fileData = getCleanupData()	
+        const {cleanupData, columns} = getCleanupData()
 
 		let columnIndex = 0
 		let objectBuilder = {}
 		const processedCsvToInsert = []
 		const processedCsvToUpdate = []
 		const patientsThatGaveConsent = []
+
+		function getCleanupData () {
+
+			const textData = fs.readFileSync("/Users/abisaid.fernandez/Downloads/inputData.txt", "utf8");
+			const cleanupData = textData.replace(/(\r\n|\n|\r)/g, "|").split("|")
+			const columns = cleanupData.splice(0 , numColumns)
+		
+			return {cleanupData, columns}
+		
+		}
 
 		// Process CSV data 
 
