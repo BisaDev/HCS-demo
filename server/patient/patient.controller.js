@@ -1,6 +1,8 @@
 import fs from "fs";
+import Agenda from "agenda";
 import Patient from "./patient.model";
 import Email from "../email/email.model";
+import taskSettings from "../config/tasks"
 import { APIsuccess, APIerror } from "../helpers/API-responses";
 
 // Process CSV file and create Patient entries
@@ -62,7 +64,7 @@ export const processPatientCsv = async (req, res) => {
 				doc.save();
 			  });
 			
-			// console.log("isPatientInDb", isPatientInDb)
+			// // console.log("isPatientInDb", isPatientInDb)
 			if(!isPatientInDb) {
 				processedCsvToInsert.push(item)
 			} else {
@@ -78,11 +80,12 @@ export const processPatientCsv = async (req, res) => {
 		// Bulk creation of new entries
 		if(processedCsvToInsert.length){
 			const newPatients = await Patient.insertMany(processedCsvToInsert)
-			// console.log(newPatients)
+			// // console.log(newPatients)
 		}
 
 		// Handle email scheduling while adding reference to the user who gave concent
 		if(patientsThatGaveConsent.length) {
+			const agenda = new Agenda(taskSettings);
 			const emailPayload = []
 			const frequency = ["Day 1", "Day 2", "Day 3", "Day 4"]
 			const dayInMs = 86400000
@@ -97,51 +100,31 @@ export const processPatientCsv = async (req, res) => {
 					}
 					emailPayload.push(email)
 				})
+
+				agenda.define(
+					"send email reminder",
+					{ priority: "high", concurrency: 10 },
+					async (job) => {
+					  const { to } = job.attrs.data;
+					  await emailClient.send({
+						to,
+						from: "noreply@hcs.com",
+						subject: "Your appointment",
+						body: "...",
+					  });
+					}
+				  );
 				
 			})
 			const newEmails = await Email.insertMany(emailPayload)
-			console.log("newEmails", newEmails)
+			// console.log("newEmails", newEmails)
 		}
 
 
 
 
 		return res.status(200).json(APIsuccess(200, {   processedCsvToInsert, processedCsvToUpdate, patientsThatGaveConsent }));
-		// Validate patient data
-		const { valid, errors } = await Patient.validatePatient(body);
-		if (!valid) return res.status(400).json(APIerror(400, { errors }));
 
-		// Get patient data
-		const {
-			email,
-			password,
-			//confirmPassword,
-			mobileNumber,
-			patientname
-		} = body;
-
-		// Check if patient with provided email exists in db
-		const isPatientInDb = await Patient.findOne({ email });
-		if (isPatientInDb) return res.status(400).json(APIerror(400, { existInDb: true }));
-
-
-		// Create new patient
-		const patient = new Patient({
-			patientname,
-			mobileNumber,
-			password: hashedPassword,
-			email
-		});
-
-		// Save new patient to db
-		const newPatient = await patient.save();
-		return res.status(200).json(
-			APIsuccess(200, {
-				patient: "Created.",
-				redirect: true,
-				patient: Patient.sanitizePatientData(newPatient)
-			})
-		);
 	} catch (err) {
 		return res.status(500).json(APIerror(500, { err }));
 	}

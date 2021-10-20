@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
 import util from 'util';
 import debug from 'debug';
+import Agenda from 'agenda';
 import config from './config/config';
 import app from './config/express';
+import tasksSettings from './config/tasks';
 
 // debug
 debug('es6-express-mongoose-jest-boilerplate:index');
@@ -22,6 +24,9 @@ if (config.mongooseDebug) {
     debug(`${collectionName}.${method}`, util.inspect(query, false, 20), doc);
   });
 }
+
+const agenda = new Agenda(tasksSettings);
+agenda.processEvery("6 hours");
 
 if (!module.parent) {
   // listen on port config.port
