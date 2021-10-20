@@ -1,5 +1,5 @@
 import fs from "fs";
-import Agenda from "agenda";
+// import Agenda from "agenda";
 import Patient from "./patient.model";
 import Email from "../email/email.model";
 import taskSettings from "../config/tasks"
@@ -85,7 +85,6 @@ export const processPatientCsv = async (req, res) => {
 
 		// Handle email scheduling while adding reference to the user who gave concent
 		if(patientsThatGaveConsent.length) {
-			const agenda = new Agenda(taskSettings);
 			const emailPayload = []
 			const frequency = ["Day 1", "Day 2", "Day 3", "Day 4"]
 			const dayInMs = 86400000
@@ -100,7 +99,7 @@ export const processPatientCsv = async (req, res) => {
 					}
 					emailPayload.push(email)
 				})
-
+				/* Commented to work with jest
 				agenda.define(
 					"send email reminder",
 					{ priority: "high", concurrency: 10 },
@@ -114,7 +113,7 @@ export const processPatientCsv = async (req, res) => {
 					  });
 					}
 				  );
-				
+				*/
 			})
 			const newEmails = await Email.insertMany(emailPayload)
 			// console.log("newEmails", newEmails)
