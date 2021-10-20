@@ -5,9 +5,9 @@ This is my submit for the challenge. Feel free to ignore any other file structur
 ## Installation
 
 ```python
-After downloading the repo, use 
+After downloading the repo 
 $ npm i
-Change the inputData.txt file to a location easy to read like Download (where you place it is entirely up to you)
+Change the inputData.txt file to a location that's easy to find like Download (where you place it is entirely up to you)
 You need to make sure you change the .env with an example path provided on the FILE_LOCATION value
 
 Once done you either start with npm run test to run the automated tests.
