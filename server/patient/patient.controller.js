@@ -10,14 +10,15 @@ export const processPatientCsv = async (req, res) => {
 	try {
 		const { body } = req;
 		const numColumns = 16
-		const fileData = getCleanupData()	
-        const {cleanupData, columns} = getCleanupData()
+        const {cleanupData = [] , columns = []} = getCleanupData()
 
 		let columnIndex = 0
 		let objectBuilder = {}
 		const processedCsvToInsert = []
 		const processedCsvToUpdate = []
 		const patientsThatGaveConsent = []
+		const missingNamePatients = []
+		const missingEmailPatients = []
 
 		function getCleanupData () {
 
@@ -83,6 +84,13 @@ export const processPatientCsv = async (req, res) => {
 			if(item["CONSENT"] === "Y" && item["Email Address"]) {
 				patientsThatGaveConsent.push(item)
 			}
+			if(item["CONSENT"] === "Y" && !item["Email Address"]) {
+				missingEmailPatients.push(item)
+			}
+		
+			if(!item["First Name"]) {
+				missingNamePatients.push(item)
+			}
 		}
 
 		// Bulk creation of new entries
@@ -130,7 +138,13 @@ export const processPatientCsv = async (req, res) => {
 
 
 
-		return res.status(200).json(APIsuccess(200, {   processedCsvToInsert, processedCsvToUpdate, patientsThatGaveConsent }));
+		return res.status(200).json(APIsuccess(200, { 
+			processedCsvToInsert,
+			processedCsvToUpdate,
+			patientsThatGaveConsent,
+			missingNamePatients,
+			missingEmailPatients,
+		}));
 
 	} catch (err) {
 		return res.status(500).json(APIerror(500, { err }));
