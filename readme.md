@@ -22,9 +22,18 @@ Finally, for review the implementation of the features requested,I've developed
 using TDD on the csv-service.js while also exposing the logic to the patien.controller
 file for use as an API.
 
+## Caveats
+
+Due to time constraints I wasn't able to resolve things around the app.Here a couple
+of things:
+- You'll need to escape from Jest when finishing a test
+- While I managed to add an extra validation to prevent the app from creating infinite
+number of patient entries, I can't say the same for the emails. I shouldn't affect
+you experience.
+
 ## Contact
 
 If there's any question you can contact me via e-mail: afernandezdelara@gmail.com
 
-Cheers ! :tada:
+Cheers ! 
 
